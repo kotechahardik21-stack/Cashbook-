@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2457d6">
+<link rel="icon" href="icon-192.png">
+<title>My Cashbook</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f4f6f8;--card:#fff;--text:#1b2430;--muted:#6b7683;--line:#e3e8ee;--in:#12805c;--out:#c8352b;--accent:#2457d6;--accent-t:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10151b;--card:#18202a;--text:#e8edf3;--muted:#92a0b0;--line:#27323f;--in:#3ecf9a;--out:#ff7b70;--accent:#6c93ff;--accent-t:#0b1220;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10151b;--card:#18202a;--text:#e8edf3;--muted:#92a0b0;--line:#27323f;--in:#3ecf9a;--out:#ff7b70;--accent:#6c93ff;--accent-t:#0b1220;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45}
+.wrap{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:1.4rem;margin:4px 0 14px}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.box small{color:var(--muted);display:block;font-size:.75rem}
+.box b{font-size:1.15rem;word-break:break-word}
+.in{color:var(--in)}.out{color:var(--out)}
+form{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px;margin-bottom:18px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{font-size:.78rem;color:var(--muted);display:grid;gap:4px}
+input,select{font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);width:100%}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:inherit;cursor:pointer}
+.seg button.on.i{background:var(--in);color:var(--accent-t);border-color:var(--in)}
+.seg button.on.o{background:var(--out);color:var(--accent-t);border-color:var(--out)}
+.add{padding:12px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-t);font:inherit;font-weight:600;cursor:pointer}
+.day{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.dh{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--line);font-size:.85rem}
+.dh strong{font-size:.95rem}
+.e{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.e:last-child{border-bottom:0}
+.e .n{color:var(--muted);font-size:.85rem;word-break:break-word}
+.e .a{font-weight:600;white-space:nowrap}
+.x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:4px 8px}
+.empty{text-align:center;color:var(--muted);padding:30px 0}
+.top{display:flex;justify-content:space-between;align-items:center}
+.top button{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit;font-size:.8rem}
+.share{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px;margin-bottom:18px}
+.hint{color:var(--muted);font-size:.78rem}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1>My Cashbook</h1><button id="reset" type="button">Clear all</button></div>
+
+  <div class="sum">
+    <div class="box"><small>Total money I had</small><b class="in" id="tin">₹0</b></div>
+    <div class="box"><small>Total used</small><b class="out" id="tout">₹0</b></div>
+    <div class="box"><small>Balance left</small><b id="bal">₹0</b></div>
+  </div>
+
+  <form id="f">
+    <div class="seg">
+      <button type="button" class="i on" data-t="in">+ Money In</button>
+      <button type="button" class="o" data-t="out">− Expense</button>
+    </div>
+    <div class="row">
+      <label>Date<input type="date" id="d" required></label>
+      <label>Amount (₹)<input type="number" id="a" min="0" step="0.01" inputmode="decimal" placeholder="0" required></label>
+    </div>
+    <label>Comment<input type="text" id="c" maxlength="120" placeholder="e.g. Salary, Lunch, Bus fare"></label>
+    <button class="add" type="submit">Add entry</button>
+  </form>
+
+  <div class="share">
+    <div class="row">
+      <label>PDF from (optional)<input type="date" id="pf"></label>
+      <label>PDF to (optional)<input type="date" id="pt"></label>
+    </div>
+    <button class="add" id="pdf" type="button">⬇ Save PDF to share</button>
+    <span class="hint">Makes a PDF report you can send on WhatsApp, email or anywhere. Leave the dates empty to include everything.</span>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<script>
+(function(){
+  var KEY="cashbook.v1", entries=[], type="in";
+  var $=function(i){return document.getElementById(i)};
+  function alert(m){var t=$("toast");if(!t){t=document.createElement("div");t.id="toast";t.style.cssText="position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--text);color:var(--bg);padding:12px 14px;border-radius:10px;z-index:99;text-align:center";document.body.appendChild(t)}t.textContent=m;t.style.display="block";clearTimeout(t._h);t._h=setTimeout(function(){t.style.display="none"},4000)}
+  function load(){try{var r=localStorage.getItem(KEY);entries=r?JSON.parse(r):[];if(!Array.isArray(entries))entries=[]}catch(e){entries=[]}}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(entries))}catch(e){}}
+  function money(n){var neg=n<0;return (neg?"−":"")+"₹"+Math.abs(n).toLocaleString("en-IN",{maximumFractionDigits:2})}
+  function today(){var t=new Date();return t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0")}
+  function fmt(d){var p=d.split("-");return new Date(p[0],p[1]-1,p[2]).toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short",year:"numeric"})}
+
+  function render(){
+    var tin=0,tout=0,days={};
+    entries.forEach(function(e){
+      if(e.type==="in")tin+=e.amt;else tout+=e.amt;
+      (days[e.date]=days[e.date]||[]).push(e);
+    });
+    $("tin").textContent=money(tin);$("tout").textContent=money(tout);
+    var b=$("bal");b.textContent=money(tin-tout);b.className=(tin-tout)<0?"out":"in";
+
+    var asc=Object.keys(days).sort(),run=0,info={};
+    asc.forEach(function(d){
+      var di=0,do_=0;
+      days[d].forEach(function(e){if(e.type==="in")di+=e.amt;else do_+=e.amt});
+      run+=di-do_;info[d]={i:di,o:do_,bal:run};
+    });
+
+    var L=$("list");L.innerHTML="";
+    if(!asc.length){var em=document.createElement("div");em.className="empty";em.textContent="No entries yet. Add your first one above.";L.appendChild(em);return}
+
+    asc.slice().reverse().forEach(function(d){
+      var box=document.createElement("div");box.className="day";
+      var h=document.createElement("div");h.className="dh";
+      var s=document.createElement("strong");s.textContent=fmt(d);h.appendChild(s);
+      var m=document.createElement("span");
+      m.textContent="In "+money(info[d].i)+"  ·  Used "+money(info[d].o)+"  ·  Balance "+money(info[d].bal);
+      h.appendChild(m);box.appendChild(h);
+      days[d].slice().reverse().forEach(function(e){
+        var r=document.createElement("div");r.className="e";
+        var l=document.createElement("div");
+        var n=document.createElement("div");n.className="n";n.textContent=e.note||(e.type==="in"?"Money in":"Expense");
+        l.appendChild(n);
+        var a=document.createElement("div");a.className="a "+(e.type==="in"?"in":"out");
+        a.textContent=(e.type==="in"?"+ ":"− ")+money(e.amt);
+        var x=document.createElement("button");x.className="x";x.type="button";x.title="Delete";x.textContent="✕";
+        x.onclick=function(){if(x.getAttribute("data-s")!=="1"){x.setAttribute("data-s","1");x.textContent="Delete?";x.style.color="var(--out)";x.style.fontSize=".8rem";setTimeout(function(){x.setAttribute("data-s","0");x.textContent="✕";x.style.color="";x.style.fontSize=""},3000);return}entries=entries.filter(function(z){return z.id!==e.id});save();render()};
+        r.appendChild(l);r.appendChild(a);r.appendChild(x);box.appendChild(r);
+      });
+      L.appendChild(box);
+    });
+  }
+
+  document.querySelectorAll(".seg button").forEach(function(btn){
+    btn.onclick=function(){
+      type=btn.getAttribute("data-t");
+      document.querySelectorAll(".seg button").forEach(function(o){o.classList.toggle("on",o===btn)});
+    };
+  });
+
+  $("f").onsubmit=function(ev){
+    ev.preventDefault();
+    var amt=parseFloat($("a").value);
+    if(!(amt>0)||!$("d").value)return;
+    entries.push({id:Date.now()+Math.random(),date:$("d").value,type:type,amt:amt,note:$("c").value.trim()});
+    save();$("a").value="";$("c").value="";render();$("a").focus();
+  };
+
+  $("reset").onclick=function(){var b=$("reset");if(b.getAttribute("data-s")!=="1"){b.setAttribute("data-s","1");b.textContent="Tap again: delete ALL";b.style.color="var(--out)";setTimeout(function(){b.setAttribute("data-s","0");b.textContent="Clear all";b.style.color=""},3000);return}entries=[];save();render();b.setAttribute("data-s","0");b.textContent="Clear all";b.style.color=""};
+
+  var dl=null;
+  try{if(window.claude&&window.claude.use){window.claude.use("downloads").then(function(d){dl=d}).catch(function(){})}}catch(e){}
+  function pm(n){return (n<0?"-":"")+"Rs. "+Math.abs(n).toLocaleString("en-IN",{maximumFractionDigits:2})}
+  $("pdf").onclick=function(){
+    var J=window.jspdf;
+    if(!J){alert("The PDF tool did not load. Check your internet and try again.");return}
+    
+    var from=$("pf").value,to=$("pt").value,open=0,list=[];
+    entries.forEach(function(e){
+      if(from&&e.date<from)open+=(e.type==="in"?e.amt:-e.amt);
+      else if(to&&e.date>to){}
+      else list.push(e);
+    });
+    if(!list.length){alert("No entries found for these dates.");return}
+    list.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:a.id-b.id});
+    var tin=0,tout=0;
+    list.forEach(function(e){if(e.type==="in")tin+=e.amt;else tout+=e.amt});
+    var doc=new J.jsPDF({unit:"mm",format:"a4"}),y=18;
+    function need(h){if(y+h>282){doc.addPage();y=18}}
+    function txt(t,x,size,bold,rgb,al){doc.setFont("helvetica",bold?"bold":"normal");doc.setFontSize(size);doc.setTextColor(rgb[0],rgb[1],rgb[2]);doc.text(t,x,y,al?{align:al}:undefined)}
+    var G=[27,36,48],M=[107,118,131],GR=[18,128,92],RD=[200,53,43];
+    txt("My Cashbook",14,20,true,G);y+=7;
+    var rng=(from||to)?("Period: "+(from?fmt(from):"start")+" to "+(to?fmt(to):"today")):"Period: all entries";
+    txt(rng,14,10,false,M);y+=5;
+    txt("Generated on "+fmt(today()),14,10,false,M);y+=9;
+    doc.setDrawColor(227,232,238);doc.line(14,y-4,196,y-4);
+    var cols=[["Opening balance",open,G],["Money in",tin,GR],["Money used",tout,RD],["Closing balance",open+tin-tout,G]];
+    cols.forEach(function(c,i){var x=14+i*46;txt(c[0],x,8,false,M);y+=5;txt(pm(c[1]),x,11,true,c[2]);y-=5});
+    y+=12;doc.line(14,y-4,196,y-4);y+=4;
+    var days={},order=[];
+    list.forEach(function(e){if(!days[e.date]){days[e.date]=[];order.push(e.date)}days[e.date].push(e)});
+    var run=open;
+    order.forEach(function(d){
+      var di=0,do_=0;days[d].forEach(function(e){if(e.type==="in")di+=e.amt;else do_+=e.amt});
+      run+=di-do_;
+      need(20);
+      doc.setFillColor(240,242,245);doc.rect(14,y-5,182,8,"F");
+      txt(fmt(d),16,10,true,G);
+      txt("In "+pm(di)+"   Used "+pm(do_)+"   Balance "+pm(run),194,8.5,false,M,"right");
+      y+=8;
+      days[d].forEach(function(e){
+        var lines=doc.splitTextToSize(e.note||(e.type==="in"?"Money in":"Expense"),120);
+        need(lines.length*5+3);
+        txt(lines[0],16,10,false,G);
+        txt((e.type==="in"?"+ ":"- ")+pm(e.amt),194,10,true,e.type==="in"?GR:RD,"right");
+        for(var k=1;k<lines.length;k++){y+=5;txt(lines[k],16,10,false,G)}
+        y+=6;
+      });
+      y+=3;
+    });
+    var name="cashbook-"+today()+".pdf",blob;
+    try{blob=doc.output("blob")}catch(e){alert("Could not create the PDF. Please try again.");return}
+    function fallback(){
+      try{
+        var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;
+        document.body.appendChild(a);a.click();
+        setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},2000);
+        alert("PDF saved. Open Files or Downloads on your phone and share it from there.");
+      }catch(e){alert("Could not save the PDF. Please try again.")}
+    }
+    if(dl){
+      dl.save({filename:name,data:blob}).catch(function(err){
+        if(err&&err.code==="declined")return;
+        fallback();
+      });
+      return;
+    }
+    try{
+      var f=new File([blob],name,{type:"application/pdf"});
+      if(navigator.canShare&&navigator.canShare({files:[f]})){
+        navigator.share({files:[f],title:"My Cashbook"}).catch(function(err){if(!err||err.name!=="AbortError")fallback()});
+        return;
+      }
+    }catch(e){}
+    fallback();
+  };
+
+  $("d").value=today();load();render();
+})();
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script>
+</body>
+</html>
